@@ -1,0 +1,91 @@
+use std::str::FromStr;
+use ast::{Expr, Opcode};
+
+grammar;
+
+BinExprTier<Op, NextTier>: Box<Expr> = {
+	<fst:BinExprTier<Op, NextTier>> <op: Op> <snd: NextTier> => Box::new(Expr::Op(op, vec![fst, snd])),
+	NextTier,
+};
+
+UnExprTier<Op, NextTier>: Box<Expr> = {
+	<op: Op> <val: NextTier> => Box::new(Expr::Op(op, vec![val])),
+	NextTier,
+};
+
+// Boolean Arithmetic
+pub BooleanExpr = BinExprTier<DisOp, Conjunction>;
+Conjunction = BinExprTier<ConOp, Negation>;
+Negation = UnExprTier<NegOp, Boolean>;
+
+Boolean: Box<Expr> = {
+	"True" => Box::new(Expr::True),
+	"False" => Box::new(Expr::False),
+	"(" <BooleanExpr> ")",
+	Comparison,
+};
+
+DisOp: Opcode = {
+	"or" => Opcode::Or,
+};
+
+ConOp: Opcode = {
+	"and" => Opcode::And,
+};
+
+NegOp: Opcode = {
+	"not" => Opcode::Not,
+};
+
+// Comparisons
+pub Comparison: Box<Expr> = {
+	<fst: ArithmeticExpr> <op: CompOp> <snd: ArithmeticExpr> => Box::new(Expr::Op(op, vec![fst, snd])),
+};
+
+CompOp: Opcode = {
+	"==" => Opcode::Eq,
+	"!=" => Opcode::Neq,
+	"≠" => Opcode::Neq,
+	"<=" => Opcode::Leq,
+	"≤" => Opcode::Leq,
+	">=" => Opcode::Geq,
+	"≥" => Opcode::Geq,
+	"<" => Opcode::Lesser,
+	">" => Opcode::Greater,
+};
+
+// Arithmetic
+pub ArithmeticExpr = BinExprTier<SummandOp, Factor>;
+Factor = BinExprTier<FactorOp, Term>;
+
+Term: Box<Expr> = {
+    Num => Box::new(Expr::Number(<>)),
+    "(" <ArithmeticExpr> ")",
+};
+
+Num: i32 = {
+    r"[0-9]+" => i32::from_str(<>).unwrap(),
+};
+
+SummandOp: Opcode = {
+    "+" => Opcode::Add,
+    "-" => Opcode::Sub,
+};
+
+FactorOp: Opcode = {
+    "*" => Opcode::Mul,
+	"·" => Opcode::Mul,
+    "/" => Opcode::Div,
+	"÷" => Opcode::Div,
+};
+
+// String and Char Literals
+Str: String = {
+	"\".*\"" => String::from_str(<>).unwrap(),
+	"».*«" => String::from_str(<>).unwrap(),
+};
+
+Char: char = {
+	"'.'" => char::from_str(<>).unwrap(),
+	"›.‹" => char::from_str(<>).unwrap(),
+};

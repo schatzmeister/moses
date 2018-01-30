@@ -1,0 +1,20 @@
+use std::str::FromStr;
+// use std::ops::{Add, Sub, Mul, Div};
+
+grammar;
+
+Comma<T>: Vec<T> = {
+	<v: (<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
+
+pub Expr: i32 = {
+	//<op: Operator> "[" <vals: Comma<i32>> "]" => op(vals)
+	r"[0-9]+" => i32::from_str(<>).unwrap(),
+};
